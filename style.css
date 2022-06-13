@@ -1,0 +1,292 @@
+html {
+  background: #555;
+  background-size: cover;
+  text-align: center;
+  font-size: 10px;
+}
+
+body {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.w-300 {
+  width: 300px;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.right {
+  top: 0;
+  right: 0;
+}
+
+.left {
+  top: 0;
+  left: 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: flex;
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0 auto;
+  width: min(90%, 1100px);
+}
+
+.tacho,
+.speedo {
+  width: 300px;
+  height: 300px;
+  border: 10px solid white;
+  border-radius: 50%;
+  margin: 0 auto;
+  position: relative;
+  padding: 2rem;
+}
+
+.tacho-face,
+.speedo-face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform: translateY(-3px);
+  /* account for the height of the clock hands */
+}
+
+.tacho-hand,
+.speedo-hand {
+  width: 50%;
+  height: 9px;
+  background: crimson;
+  position: absolute;
+  top: 50%;
+  transform-origin: 100%;
+  /* pozwala na rotacje "rączki" od prawej strony, nie od srodka */
+  transition: all 0.15 cubic-bezier(0, 3.66, 1, 1.01);
+  /* ten efekt mozna sobie wygenerowac w toolsach chrome */
+  z-index: 100;
+}
+
+.milage{
+  position: absolute;
+  bottom: 20px;
+  left: 46%
+}
+
+.revLimiter {
+  animation: shake;
+  animation-duration: 500ms;
+  animation-iteration-count: infinite;
+}
+
+@keyframes shake {
+  0% {
+    transform: rotate(111deg)
+  }
+
+  50% {
+    transform: rotate(109deg)
+  }
+
+  100% {
+    transform: rotate(111deg)
+  }
+}
+
+.startup {
+  animation: start;
+  animation-duration: 1000ms;
+  animation-iteration-count: 1;
+}
+
+@keyframes start {
+  0% {
+    transform: rotate(-62deg)
+  }
+
+  40% {
+    transform: rotate(-26deg)
+  }
+
+  50% {
+    transform: rotate(-26deg)
+  }
+
+  100% {
+    transform: rotate(-47deg)
+  }
+}
+
+.engineOff {
+  animation: off;
+  animation-duration: 1000ms;
+  animation-iteration-count: 1;
+}
+
+@keyframes off {
+  0% {
+    transform: rotate(-47deg)
+  }
+
+  100% {
+    transform: rotate(-62deg)
+  }
+}
+
+
+.key-up {
+  opacity: 0.5;
+}
+
+li {
+  list-style-type: none;
+}
+
+.revNumber,
+.speedoNumber {
+  color: white;
+  position: absolute;
+  z-index: 10;
+}
+
+.redline {
+  color: crimson
+}
+.zero {
+  left: 68px;
+  bottom: -7px;
+}
+.one {
+  left: 22px;
+  bottom: 36px;
+}
+.two {
+  left: -8px;
+  bottom: 88px;
+}
+.three {
+  left: -15px;
+  bottom: 151px;
+}
+.four {
+  left: 1px;
+  top: 67px;
+}
+.five {
+  left: 41px;
+  top: 18px;
+}
+.six {
+  left: 100px;
+  top: -12px;
+}
+.seven {
+  left: 166px;
+  top: -16px;
+}
+.eight {
+  right: 64px;
+  top: 4px;
+}
+.nine {
+  right: 20px;
+  top: 40px;
+}
+
+
+.speed-0 {
+  left: 68px;
+  bottom: -6px;
+}
+.speed-10 {
+  left: 40px;
+  bottom: 13px;
+}
+.speed-20 {
+  left: 19px;
+  bottom: 37px;
+}
+.speed-30 {
+  left: 1px;
+  bottom: 63px;
+}
+.speed-40 {
+  left: -12px;
+  bottom: 92px;
+}
+.speed-50 {
+  left: -18px;
+  bottom: 123px;
+}
+.speed-60 {
+  left: -17px;
+  top: 123px;
+}
+.speed-70 {
+  left: -10px;
+  top: 94px;
+}
+.speed-80 {
+  left: 2px;
+  top: 65px;
+}  
+.speed-90 {
+  left: 20px;
+  top: 37px;
+}
+.speed-100 {
+  left: 40px;
+  top: 17px;
+}
+.speed-120 {
+  left: 79px;
+  top: -7px;
+}
+.speed-140 {
+  left: 130px;
+  top: -19px;
+}
+.speed-160 {
+  right: 89px;
+  top: -10px;
+}
+.speed-180 {
+  right: 44px;
+  top: 15px;
+}
+.speed-200 {
+  right: 12px;
+  top: 49px;
+}
+.speed-220 {
+  right: -8px;
+  bottom: 192px;
+}
+.speed-240 {
+  right: -17px;
+  bottom: 147px;
+}
+.speed-260 {
+  right: -15px;
+  bottom: 104px;
+}
+.speed-280 {
+  right: 1px;
+  bottom: 63px;
+}
+.speed-300 {
+  right: 24px;
+  bottom: 28px;
+}
+.speed-330 {
+  right: 70px;
+  bottom: -8px;
+}
