@@ -14,6 +14,6 @@ let tachoDegree = -62,
     speedoDegree = -62 
 
 // Ustawienie wskaźników po załadowaniu strony;
-// -62 stopnie odpowiadaja za ustawienie wskazówki na 0 przy zegarach
+// -62 stopnie odpowiadaja za ustawienie wskaźnika na 0 przy zegarach
 tachoHand.style.transform = `rotate(${tachoDegree}deg)`
 speedoHand.style.transform = `rotate(${speedoDegree}deg)`
