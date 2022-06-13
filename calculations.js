@@ -20,6 +20,7 @@ speedoHand.style.transform = `rotate(${speedoDegree}deg)`
 
 
 let controller = []
+let pressedKeys = [] // tylko do debugu klawiszy
 let rev = undefined
 let calm = undefined
 let isOn = false
@@ -122,3 +123,139 @@ let vehicle_tier5 = new Vehicle('Lamborghini Huracán LP-610', 'petrol', 601, 56
 
 // chwilowo brak wyboru pojazdu z listy, jest wybierany na sztywno z poziomu kodu
 const car = vehicle_tier5
+
+
+
+// nasłuchiwanie na wciśnięcie klawisza
+window.addEventListener("keydown", onKeyPressed)
+window.addEventListener('keydown', function (e) {
+    controller = (controller || [])
+    controller[e.code] = (e.type == "keydown")
+
+    // TYLKO DO DEBUGU - dodane aby kontrolować stan klawiszy
+    let li = pressedKeys[e.code]
+    if (!li) {
+        li = log.appendChild(document.createElement('li'));
+        pressedKeys[e.code] = li;
+    }
+    li.classList.remove('key-up')
+    li.innerText = `UP: ${e.code}`
+    // TYLKO DO DEBUGU - dodane aby kontrolować stan klawiszy ///////////
+})
+
+// nasłuchiwanie na puszczenie klawisza
+window.addEventListener('keyup', onKeyRelease)
+window.addEventListener('keyup', function (e) {
+    controller[e.code] = (e.type == "keydown")
+
+    // TYLKO DO DEBUGU - dodane aby kontrolować stan klawiszy
+    let li = pressedKeys[e.code]
+    if (!li) {
+        li = log.appendChild(document.createElement('li'));
+    }
+    li.classList.add('key-up')
+    li.innerText = `DOWN: ${e.code}`
+    // TYLKO DO DEBUGU - dodane aby kontrolować stan klawiszy ///////////
+})
+
+
+
+function onKeyPressed(e) {
+    // IF częściowo zapobiega zwiększonemu przyspieszeniu podczas spamowania w klawisz, w któtkim odstępnie czasu
+    if (e.code == 'ArrowUp' ||
+        e.code == 'ArrowDown' ||
+        e.code == 'KeyA' ||
+        e.code == 'KeyZ' ||
+        e.code == 'KeyE') {
+
+        window.addEventListener('keyup', onKeyRelease)
+        window.removeEventListener('keydown', onKeyPressed)
+
+
+        // Symulacja stacyjki - Włącz/Wyłącz
+        if (controller['KeyE']) {
+            // Zabezpieczenie, które nie pozwala na wyłączenie, gdy nie jest w stanie spoczynku
+            if (isOn && rpm < 800) {
+                tachoHand.classList.add('engineOff') // animacja spadających obrotów
+                setTimeout(() => tachoHand.classList.remove('engineOff'), 300)
+                tachoDegree = -62 // -62 wskazówka leży na 0
+                isOn = !isOn
+                // oczywiście uruchomić można jedynie, gdy jest wyłączony
+            } else if (rpm == 0) {
+                tachoDegree = -47 // -47 wskazówka ma około 700rpm
+                tachoHand.classList.add('startup') // animacja z 'przygazówką' po uruchomieniu
+                setTimeout(() => tachoHand.classList.remove('startup'), 1000)
+                isOn = !isOn
+            } else return
+
+            calcAndShowRevs(tachoDegree)
+        }
+
+
+        // Przyspieszanie
+        if (controller['ArrowUp'] && isOn) {
+            if (!counterStarted) timer = setInterval(() => timerFunc(), 100)
+            accelerateFunc()
+        }
+
+        // Hamowanie
+        if (controller['ArrowDown'] && isOn && selectedGear > 0) brakeFunc()
+    } else return
+}
+
+
+function onKeyRelease(e) {
+    if (e.code == 'ArrowUp' ||
+        e.code == 'ArrowDown' ||
+        e.code == 'KeyA' ||
+        e.code == 'KeyZ' ||
+        e.code == 'KeyE') {
+
+        window.addEventListener('keydown', onKeyPressed)
+        window.removeEventListener('keyup', onKeyRelease)
+
+        tachoHand.classList.remove('revLimiter')
+
+
+        if (!controller['ArrowUp']) {
+            cancelAnimationFrame(rev)
+            brakeFunc()
+        }
+        if (controller['ArrowUp']) cancelAnimationFrame(calm)
+
+
+        // Zmiana na wyższy bieg
+        if (e.code == 'KeyA') {
+            tachoDegree = (changeGear('1').newRPM / 44) - 62
+        }
+
+        // Zmiana na niższy bieg
+        if (e.code == 'KeyZ') {
+            // blokada redukcji biegow dla zbyt wysokich obrotow
+            tachoDegree = changeGear('-1').newRPM > car.maxRPM-100 ? (changeGear('1').newRPM / 44 - 62) : (newRPM / 44 - 62)
+        }
+    } else return
+
+}
+
+
+
+// Przeliczenia oporów, mocy
+function getTransmissionTorque(engineTorque, gearRatio) {
+    return engineTorque * gearRatio * car.transmission.getTransmissionRatio().finalDrive * car.transmission.getTransmissionRatio().efficient
+}
+function getWheelForce(transmissionTorque) {
+    return transmissionTorque / car.wheel.getWheelRadius()
+}
+function getForceDrag(speed) {
+    return car.frontalArea * speed * Math.abs(speed)
+}
+function getForceRolling(speed) {
+    return speed * car.roadDrag
+}
+function combineAllForces(forceDrag, forceRolling, ForceWheel) {
+    return forceDrag + forceRolling - ForceWheel
+}
+function getAccelerate(allForces) {
+    return accelerate + (dt * (allForces / car.mass))
+}
