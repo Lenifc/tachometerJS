@@ -10,10 +10,13 @@ A - wyższy bieg
 Z - niższy bieg
 
 ## W trakcie tworzenia:
--- W przypadku postoju i pierwszego biegu naciśnięcie 'hamucla', a następnie 'przyspieszenia'
+- W przypadku postoju i pierwszego biegu naciśnięcie 'hamucla', a następnie 'przyspieszenia'
 spowoduje uruchomienie procedury startowej (LaunchControl) w niektórych pojazdach co
 przełoży się na nieco lepsze przyspieszenie dla pierwszego biegu czyli lepszy czas 0-100
--- 
+- Usunięcie skutków ubocznych skrzyni manualnej
+- Wykonanie dokładnego stopera przyspieszenia opartego na timestamp
+- dodanie wyboru różnych pojazdów z listy
+- ulepszenie wizualne liczników
 
 ##
 
