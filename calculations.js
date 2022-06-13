@@ -214,13 +214,15 @@ function onKeyRelease(e) {
         window.addEventListener('keydown', onKeyPressed)
         window.removeEventListener('keyup', onKeyRelease)
 
-        tachoHand.classList.remove('revLimiter')
-
-
+        
+        // w przypadku puszczenia 'gazu' pojazd zaczyna zwalniac
         if (!controller['ArrowUp']) {
             cancelAnimationFrame(rev)
             brakeFunc()
+            tachoHand.classList.remove('revLimiter')
         }
+        // w przypadku, gdy 'gaz' jest nadal wciśnięty pojazd nie przestanie przyspieszać
+        // np. w przypadku ręcznej zmiany biegów klawiszami A/Z
         if (controller['ArrowUp']) cancelAnimationFrame(calm)
 
 
@@ -237,7 +239,6 @@ function onKeyRelease(e) {
     } else return
 
 }
-
 
 
 // Przeliczenia oporów, mocy
@@ -258,4 +259,133 @@ function combineAllForces(forceDrag, forceRolling, ForceWheel) {
 }
 function getAccelerate(allForces) {
     return accelerate + (dt * (allForces / car.mass))
+}
+
+
+
+function calcAcceleration(currRPM) {
+    // przeliczenie mocy pojazdu na STOPNIE - o ile ma się poruszać wskaźnik obrotów 
+    if (currRPM < 1000) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[750], car.transmission.getTransmissionRatio()[selectedGear])
+    if (currRPM >= 1000 && currRPM < 2000) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[1000], car.transmission.getTransmissionRatio()[selectedGear])
+    if (currRPM >= 2000 && currRPM < 3000) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[2000], car.transmission.getTransmissionRatio()[selectedGear])
+    if (currRPM >= 3000 && currRPM < 3500) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[3000], car.transmission.getTransmissionRatio()[selectedGear])
+    if (currRPM >= 3500 && currRPM < 4500) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[3500], car.transmission.getTransmissionRatio()[selectedGear])
+    if (currRPM >= 4500 && currRPM < 5500) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[4500], car.transmission.getTransmissionRatio()[selectedGear])
+    if (currRPM >= 5500 && currRPM < 6500) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[5500], car.transmission.getTransmissionRatio()[selectedGear])
+    if (currRPM >= 6500 && currRPM < 7900) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[6500], car.transmission.getTransmissionRatio()[selectedGear])
+    if (currRPM >= 7900) currentTransmissionTorque = getTransmissionTorque(car.engine.engineSpeed[8000], car.transmission.getTransmissionRatio()[selectedGear])
+
+    // zastosowany mnożnik przyspieszenia dla pojazdów oraz blokada, aby pojazd nie zaczął przyspieszać za wolno
+    accelerate = car.accelerationMultiplier * getAccelerate(Math.abs(combineAllForces(getForceDrag(speed) / 1000, getForceRolling(speed) * 100, getWheelForce(currentTransmissionTorque) / 10))) / 44
+    accelerate = accelerate <= 0.04 && car.type != 'electric' ? 0.04 : accelerate
+
+    // polepszenie przyspieszenia w przypadku niskich prędkości
+    if (speed > 0 && speed <= 100 && car.type == 'electric') return accelerate * 2
+    if (speed > 0 && speed <= 60 && selectedGear == 1) return accelerate * 1.55
+
+    // spowolnienie przyspieszenia, aby zachować większy realizm
+    else if (speed > 220) return accelerate / 2.77
+    else if (speed > 200 || (selectedGear >= 3 && speed < 70) || (selectedGear >= 4 && speed < 100) || (selectedGear >= 5 && speed < 120)) return accelerate / 2.3
+    else if (speed > 180) return accelerate / 1.9
+    else if (speed > 160) return accelerate / 1.7
+    else if (speed > 140) return accelerate / 1.5
+    else if (speed > 120) return accelerate / 1.3
+    else if (speed > 100) return accelerate / 1.1
+    else return accelerate
+}
+
+function accelerateFunc() {
+    if (speed >= car.topSpeed) tachoDegree = tachoDegree
+    else if (tachoDegree <= ((car.engine.maxRPM / 44) - 62)) {
+        if (controller['ArrowUp']) {
+            tachoDegree += calcAcceleration(rpm)
+            calcAndShowRevs(tachoDegree)
+            calcandShowSpeed()
+        }
+    } else {
+        // w przypadku osiągnięcia limitera zostanie nałożona animacja
+        if ((selectedGear == 0 && rpm >= car.engine.maxRPM - 100) || (selectedGear == car.maxGear && speed >= car.topSpeed - 1)) tachoHand.classList.add('revLimiter')
+        // po poprawieniu działania manualnej przekładni dodać wybór między całkowitym automatem, a manualem
+        // póki co jest opcja hybrydowa z przewagą automatu
+        else tachoDegree = (changeGear('1').newRPM / 44) - 62 // AUTOMAT
+    }
+
+    rev = window.requestAnimationFrame(accelerateFunc)
+}
+
+function brakeFunc() {
+    if (tachoDegree >= -45 && !controller['ArrowUp']) {
+        //na nizszych obrotach wskazowka 'uspokajaja sie' wolniej
+        tachoDegree += tachoDegree < 5 ? -(0.07 * (controller['ArrowDown'] ? 3 : 1)) : -0.15 * (controller['ArrowDown'] ? 2 : 1) //na nizszych obrotach wskazowka 'uspokajaja sie' wolniej
+        calcAndShowRevs(tachoDegree)
+        calcandShowSpeed()
+        reduceGearOnBrake()
+    } else return
+
+    calm = requestAnimationFrame(brakeFunc)
+    tachoHand.classList.remove('revLimiter')
+}
+
+function reduceGearOnBrake() {
+    // automatyczna redukcja biegu na niższy gdy obroty silnika robią się zbyt niskie
+    if (rpm < 2500 && selectedGear > 1) tachoDegree = (changeGear('-1').newRPM / 44) - 62
+}
+
+
+
+function calcAndShowRevs(tachoDegree) {
+    rpm = (tachoDegree + 62) * 44 // eksperymentalne przeliczenie stopni na obroty - 182stopnie-> 8000rpm
+    rph = rpm * 60
+
+    if (rpm <= 750 && isOn) {
+        rpm = 750
+        tachoDegree = -47
+    }
+    tachoHand.style.transform = `rotate(${tachoDegree}deg)`;
+
+    let gearRatio = car.transmission.getTransmissionRatio()[selectedGear]
+
+    // przeliczenie prędkości na podstawie wybranego biegu, wielkości kół i danych obrotów silnika
+    speed = selectedGear != 0 ? (rph * car.wheel.getWheelDiameter() * car.circuit / (car.transmission.getTransmissionRatio().finalDrive * gearRatio)) : 0
+
+    showSpeed.innerText = Math.round(speed)
+    showTacho.innerText = 50 * Math.ceil(rpm / 50) // zaokragla wartosci do kazdej 50
+}
+function calcandShowSpeed(){
+    let speedDegree 
+        // wskaźniki inaczej reagują w zależności od prędkości - różne rozstawienia cyfr na blacie
+        // skalibrowano ręcznie
+    if (speed < 0) speedDegree = -62 
+    if(speed < 100) speedDegree = (speed*1.15)-62
+    if(speed >= 100 && speed < 200) speedDegree = (speed/1.1)-38
+    if(speed >= 200 && speed < 300) speedDegree = (speed/1.25)-17
+    if(speed >= 300) speedDegree = (speed/1.4)+10
+    
+    speedoHand.style.transform = `rotate(${speedDegree}deg)`;
+}
+
+
+function changeGear(change) {
+    //
+    // POPRAWIC ZMIANY BIEGU MIEDZY 'N', A 1 !! ABY PREDKOSC POWOLI SPADALA
+    //
+
+    // zabezpieczenie, aby nie wyjśc poza ilość dostępnych biegów
+    if (selectedGear >= 0 && selectedGear <= car.maxGear - 1 && change == '1') selectedGear++
+    if (selectedGear >= 1 && selectedGear <= car.maxGear && change == '-1') selectedGear--
+
+    // przeliczenie jakie obroty powinny być po zmianie biegu
+    newRPM = speed * (car.transmission.getTransmissionRatio().finalDrive * car.transmission.getTransmissionRatio()[selectedGear]) / (60 * car.wheel.getWheelDiameter() * car.circuit)
+    gear.innerText = selectedGear == 0 ? 'N' : selectedGear
+
+    if (selectedGear == 0) newRPM = rpm
+    return {
+        selectedGear,
+        newRPM
+    }
+}
+
+
+function timerFunc() {
+return 0
 }
